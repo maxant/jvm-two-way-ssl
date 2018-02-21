@@ -1,20 +1,14 @@
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsParameters;
+import com.sun.net.httpserver.HttpsServer;
+
+import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLSession;
-
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsParameters;
-import com.sun.net.httpserver.HttpsServer;
 
 public class Middle {
 
@@ -27,10 +21,10 @@ public class Middle {
         //middle sees:
         //    Thread-2, RECV TLSv1.2 ALERT:  fatal, certificate_unknown
 
-        System.setProperty("javax.net.ssl.keyStore", "middle/middle-keystore.jks");
+        System.setProperty("javax.net.ssl.keyStore", "certificates/middle/middle-keystore.jks");
         System.setProperty("javax.net.ssl.keyStorePassword", "123456");
         System.setProperty("javax.net.ssl.keyStoreType", "JKS");
-        System.setProperty("javax.net.ssl.trustStore", "middle/middle-truststore.jks");
+        System.setProperty("javax.net.ssl.trustStore", "certificates/middle/middle-truststore.jks");
         System.setProperty("javax.net.ssl.trustStorePassword", "123456");
         System.setProperty("javax.net.ssl.trustStoreType", "JKS");
         System.setProperty("javax.net.debug", "ssl");
@@ -59,6 +53,7 @@ public class Middle {
             URL obj = new URL("https://localhost:10002/back");
             HttpsURLConnection connection = (HttpsURLConnection) obj.openConnection();
             connection.setRequestMethod("GET");
+         //TODO remove hostname verifier
             connection.setHostnameVerifier(new HostnameVerifier() {
                 @Override
                 public boolean verify(String s, SSLSession sslSession) {

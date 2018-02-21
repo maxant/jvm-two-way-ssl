@@ -1,4 +1,4 @@
-out
+target
 .idea
-code/code.iml
+*.iml
 
