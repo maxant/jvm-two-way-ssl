@@ -22,10 +22,10 @@ public class Middle {
         //    Thread-2, RECV TLSv1.2 ALERT:  fatal, certificate_unknown
 
         System.setProperty("javax.net.ssl.keyStore", "certificates/middle/middle-keystore.jks");
-        System.setProperty("javax.net.ssl.keyStorePassword", "123456");
+        System.setProperty("javax.net.ssl.keyStorePassword", "12345_mks");
         System.setProperty("javax.net.ssl.keyStoreType", "JKS");
         System.setProperty("javax.net.ssl.trustStore", "certificates/middle/middle-truststore.jks");
-        System.setProperty("javax.net.ssl.trustStorePassword", "123456");
+        System.setProperty("javax.net.ssl.trustStorePassword", "12345_mts");
         System.setProperty("javax.net.ssl.trustStoreType", "JKS");
         System.setProperty("javax.net.debug", "ssl");
 
@@ -35,12 +35,11 @@ public class Middle {
             @Override
             public void configure(HttpsParameters params) {
                 try {
-                    SSLContext c = SSLContext.getDefault();
-                    SSLEngine engine = c.createSSLEngine();
+                    SSLEngine engine = sslContext.createSSLEngine();
                     params.setNeedClientAuth(true);
                     params.setCipherSuites(engine.getEnabledCipherSuites());
                     params.setProtocols(engine.getEnabledProtocols());
-                    SSLParameters defaultSSLParameters = c.getDefaultSSLParameters();
+                    SSLParameters defaultSSLParameters = sslContext.getDefaultSSLParameters();
                     defaultSSLParameters.setNeedClientAuth(true);
                     params.setSSLParameters(defaultSSLParameters);
                 } catch (Exception ex) {
@@ -53,13 +52,6 @@ public class Middle {
             URL obj = new URL("https://localhost:10002/back");
             HttpsURLConnection connection = (HttpsURLConnection) obj.openConnection();
             connection.setRequestMethod("GET");
-         //TODO remove hostname verifier
-            connection.setHostnameVerifier(new HostnameVerifier() {
-                @Override
-                public boolean verify(String s, SSLSession sslSession) {
-                    return true;
-                }
-            });
             connection.setDoOutput(false);
             int responseCode = connection.getResponseCode();
             System.out.println(
