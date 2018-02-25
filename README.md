@@ -60,6 +60,7 @@ It was necessary to add the same algorithm to both of the following methods:
 - chooseServerAlias
 - chooseClientAlias
 
+The additional selection looks like this:
 
     ...
     for(String alias : aliases){
