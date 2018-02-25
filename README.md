@@ -91,6 +91,24 @@ Logs including SSL debug logs from three tests are available:
 
 # Running the tests
 
-[](./src/)
+[PatchedSunX509KeyManagerImplTest](./src/test/java/PatchedSunX509KeyManagerImplTest.java) tests the patched implementation and the test passes succesfully.
+[SunX509KeyManagerImplTest](./src/test/java/SunX509KeyManagerImplTest.java) tests the original implementation and the test fails.
 
 # Running the examples
+
+The following classes can be found under `src/main/java`, and all have `main` methods for running them:
+
+- Back: Represents a simple downstream SSL enabled server which requests a client certificate. Runs on port 10002 and uses key- and truststores from `certificates/back`.
+- Front: Represents a simple SSL enabled client which makes an HTTPS request to middle. Uses key- and truststores from `certificates/front`.
+- Middle: Represents a simple SSL enabled server which receives requests on port 10001 and requests a client certificate. It then makes it's own request to the downstream "back" server using SSL.
+
+As such, the middle server is the interesting component as it requires two-way SSL for incoming as well as outgoing connections.
+
+Additionally, there are two further versions of the middle server:
+
+- Middle2: This implementation uses two keystores instead of just one, each containing exactly one certificate, so that selection is always correct. This is probably the best way to fix the problem today.
+- MiddleWithPatchedKeyManager: This implementation uses the single keystore with both client and server certificates, but uses a patched version of the [PatchedSunX509KeyManagerImpl](./src/main/java/PatchedSunX509KeyManagerImpl.java)  which is capable of reading extended key usage in the certificates in order to make the correct selection.
+
+# Certificates, Key- and Truststores
+
+See [./certificates/README.md](certificates/README.md).
