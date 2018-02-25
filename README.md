@@ -116,3 +116,7 @@ Additionally, there are two further versions of the middle server:
 # Certificates, Key- and Truststores
 
 See [certificates/README.md](./certificates/README.md).
+
+# Bug Report
+
+A bug was reported to Oracle on 20180225 with internal review ID 9052786.
