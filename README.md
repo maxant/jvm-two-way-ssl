@@ -2,14 +2,14 @@
 
 See blog article: http://blog.maxant.co.uk/pebble/TODO
 
-A repo for an investigation into how the JVM handles two-way SSL, particularly
+A repo for an investigation into how the JVM handles mutual TLS authentication (two-way SSL), particularly
 how the JVM handles incoming and outgoing connections, when it has just a single key store.
 
 Consider a client application named "Front" connecting to a server named "Middle", which in turn makes a further
-connection to a downstream server named "Back".  Each connection should use two-way (client & server certificate) SSL.
+connection to a downstream server named "Back".  Each connection should use mututal (client & server certificate) TLS authentication.
 
-We noticed that the JVM running in the middle seems to be unable to create two-way SSL connections for both
-incoming and outgoing connections, because it presents the wrong certificate during one of the SSL handshakes.
+We noticed that the JVM running in the middle seems to be unable to create mutually authenticated TLS connections for both
+incoming and outgoing connections, because it presents the wrong certificate during one of the handshakes.
 
 The idea is to have two certificates in the keystore. One presented to callers, known as the server certificate
 which is used to verify the hostname of the server.  The second is presented to downstream servers when they
@@ -106,7 +106,7 @@ The following classes can be found under `src/main/java`, and all have `main` me
 - Front: Represents a simple SSL enabled client which makes an HTTPS request to middle. Uses key- and truststores from `certificates/front`.
 - Middle: Represents a simple SSL enabled server which receives requests on port 10001 and requests a client certificate. It then makes it's own request to the downstream "back" server using SSL.
 
-As such, the middle server is the interesting component as it requires two-way SSL for incoming as well as outgoing connections.
+As such, the middle server is the interesting component as it requires mutual TLS authentication for incoming as well as outgoing connections.
 
 Additionally, there are two further versions of the middle server:
 
