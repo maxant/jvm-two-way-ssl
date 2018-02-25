@@ -111,4 +111,4 @@ Additionally, there are two further versions of the middle server:
 
 # Certificates, Key- and Truststores
 
-See [./certificates/README.md](certificates/README.md).
+See [certificates/README.md](./certificates/README.md).
