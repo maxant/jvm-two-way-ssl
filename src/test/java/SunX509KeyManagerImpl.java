@@ -1,9 +1,10 @@
 // ////////////////////////////////////////////////
 // COPIED FROM http://hg.openjdk.java.net/jdk8u/jdk8u60/jdk/file/935758609767/src/share/classes/sun/security/ssl/SunX509KeyManagerImpl.java
-// MODIFIED SO THAT EXTENDED KEY USAGE IS ALSO CONSIDERED WHEN SELECTING CERTIFICATES.
+// NOT MODIFIED. USED TO DEMONSTRATE THAT TEST FAILS WITH THIS IMPLEMENTATION.
 //
 // ORIGINAL COPYRIGHT NOTICE:
 // ////////////////////////////////////////////////
+
 /*
  * Copyright (c) 1999, 2013, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -28,6 +29,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
+
 import sun.security.ssl.Debug;
 
 import javax.net.ssl.SSLEngine;
@@ -36,7 +38,6 @@ import javax.security.auth.x500.X500Principal;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.*;
 
@@ -71,7 +72,7 @@ import java.util.*;
  * the remote peer.
  *
  */
-final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
+final class SunX509KeyManagerImpl extends X509ExtendedKeyManager {
 
     private static final Debug debug = Debug.getInstance("ssl");
 
@@ -112,26 +113,26 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
                 issuerX500Principals = new HashSet<X500Principal>();
                 for (int i = 0; i < certificates.length; i++) {
                     issuerX500Principals.add(
-                            certificates[i].getIssuerX500Principal());
+                                certificates[i].getIssuerX500Principal());
                 }
             }
             return issuerX500Principals;
         }
     }
 
-    PatchedSunX509KeyManagerImpl(KeyStore ks, char[] password)
+    SunX509KeyManagerImpl(KeyStore ks, char[] password)
             throws KeyStoreException,
             NoSuchAlgorithmException, UnrecoverableKeyException {
 
         credentialsMap = new HashMap<String,X509Credentials>();
         serverAliasCache = Collections.synchronizedMap(
-                new HashMap<String,String[]>());
+                            new HashMap<String,String[]>());
         if (ks == null) {
             return;
         }
 
         for (Enumeration<String> aliases = ks.aliases();
-             aliases.hasMoreElements(); ) {
+                                        aliases.hasMoreElements(); ) {
             String alias = aliases.nextElement();
             if (!ks.isKeyEntry(alias)) {
                 continue;
@@ -152,14 +153,14 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
             }
 
             X509Credentials cred = new X509Credentials((PrivateKey)key,
-                    (X509Certificate[])certs);
+                (X509Certificate[])certs);
             credentialsMap.put(alias, cred);
             if (debug != null && Debug.isOn("keymanager")) {
                 System.out.println("***");
                 System.out.println("found key for : " + alias);
                 for (int i = 0; i < certs.length; i++) {
                     System.out.println("chain [" + i + "] = "
-                            + certs[i]);
+                    + certs[i]);
                 }
                 System.out.println("***");
             }
@@ -208,7 +209,7 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
      */
     @Override
     public String chooseClientAlias(String[] keyTypes, Principal[] issuers,
-                                    Socket socket) {
+            Socket socket) {
         /*
          * We currently don't do anything with socket, but
          * someday we might.  It might be a useful hint for
@@ -223,30 +224,7 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
         for (int i = 0; i < keyTypes.length; i++) {
             String[] aliases = getClientAliases(keyTypes[i], issuers);
             if ((aliases != null) && (aliases.length > 0)) {
-                String alias = selectAliasBasedOnExtendedKeyUsage(aliases, "1.3.6.1.5.5.7.3.2");  //TODO replace with constant
-                if (alias != null) return alias;
-
-                //default as implemented in openjdk
                 return aliases[0];
-            }
-        }
-        return null;
-    }
-
-    private String selectAliasBasedOnExtendedKeyUsage(String[] aliases, String targetExtendedKeyUsage) {
-        for(String alias : aliases){
-            try {
-                //assume cert in index 0 is the lowest one in the chain, and check its EKU
-                X509Certificate certificate = this.credentialsMap.get(alias).certificates[0];
-                List<String> ekus = certificate.getExtendedKeyUsage();
-                for (String eku : ekus) {
-                    if(eku.equals(targetExtendedKeyUsage)){
-                        return alias;
-                    }
-                }
-            }catch(CertificateParsingException e){
-                //TODO handle properly
-                e.printStackTrace();
             }
         }
         return null;
@@ -262,7 +240,7 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
      */
     @Override
     public String chooseEngineClientAlias(String[] keyType,
-                                          Principal[] issuers, SSLEngine engine) {
+            Principal[] issuers, SSLEngine engine) {
         /*
          * If we ever start using socket as a selection criteria,
          * we'll need to adjust this.
@@ -277,7 +255,7 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
      */
     @Override
     public String chooseServerAlias(String keyType,
-                                    Principal[] issuers, Socket socket) {
+            Principal[] issuers, Socket socket) {
         /*
          * We currently don't do anything with socket, but
          * someday we might.  It might be a useful hint for
@@ -304,10 +282,6 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
             aliases = getServerAliases(keyType, issuers);
         }
         if ((aliases != null) && (aliases.length > 0)) {
-            String alias = selectAliasBasedOnExtendedKeyUsage(aliases, "1.3.6.1.5.5.7.3.1");  //TODO replace with constant
-            if (alias != null) return alias;
-
-            //default as implemented in openjdk
             return aliases[0];
         }
         return null;
@@ -323,7 +297,7 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
      */
     @Override
     public String chooseEngineServerAlias(String keyType,
-                                          Principal[] issuers, SSLEngine engine) {
+            Principal[] issuers, SSLEngine engine) {
         /*
          * If we ever start using socket as a selection criteria,
          * we'll need to adjust this.
@@ -383,7 +357,7 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
         List<String> aliases = new ArrayList<>();
 
         for (Map.Entry<String,X509Credentials> entry :
-                credentialsMap.entrySet()) {
+                                                credentialsMap.entrySet()) {
 
             String alias = entry.getKey();
             X509Credentials credentials = entry.getValue();
@@ -403,9 +377,9 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
                     // Check the signature algorithm of the certificate itself.
                     // Look for the "withRSA" in "SHA1withRSA", etc.
                     String sigAlgName =
-                            certs[0].getSigAlgName().toUpperCase(Locale.ENGLISH);
+                        certs[0].getSigAlgName().toUpperCase(Locale.ENGLISH);
                     String pattern = "WITH" +
-                            sigType.toUpperCase(Locale.ENGLISH);
+                        sigType.toUpperCase(Locale.ENGLISH);
                     if (sigAlgName.contains(pattern) == false) {
                         continue;
                     }
@@ -420,7 +394,7 @@ final class PatchedSunX509KeyManagerImpl extends X509ExtendedKeyManager {
                 }
             } else {
                 Set<X500Principal> certIssuers =
-                        credentials.getIssuerX500Principals();
+                                        credentials.getIssuerX500Principals();
                 for (int i = 0; i < x500Issuers.length; i++) {
                     if (certIssuers.contains(issuers[i])) {
                         aliases.add(alias);
