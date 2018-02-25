@@ -60,6 +60,7 @@ It was necessary to add the same algorithm to both of the following methods:
 - chooseServerAlias
 - chooseClientAlias
 
+
     ...
     for(String alias : aliases){
         try {
@@ -79,6 +80,7 @@ It was necessary to add the same algorithm to both of the following methods:
 
     //default as implemented in openjdk
     return aliases[0];
+
 
 Logs including SSL debug logs from three tests are available:
 
