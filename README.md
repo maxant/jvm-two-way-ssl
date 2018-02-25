@@ -3,21 +3,24 @@
 See blog article: http://blog.maxant.co.uk/pebble/TODO
 
 A repo for an investigation into how the JVM handles two-way SSL, particularly
-how a single JVM handles incoming and outgoing connections, when it has just a single key store.
+how the JVM handles incoming and outgoing connections, when it has just a single key store.
 
-We noticed that the JVM seems to be unable to create two-way SSL connections for both incoming and
-outgoing connections, because it presents the wrong certificate on one of the connections.
+Consider a client application named "Front" connecting to a server named "Middle", which in turn makes a further
+connection to a downstream server named "Back".  Each connection should use two-way (client & server certificate) SSL.
+
+We noticed that the JVM running in the middle seems to be unable to create two-way SSL connections for both
+incoming and outgoing connections, because it presents the wrong certificate during one of the SSL handshakes.
 
 The idea is to have two certificates in the keystore. One presented to callers, known as the server certificate
 which is used to verify the hostname of the server.  The second is presented to downstream servers when they
-request a client certificate.  Since the keystore is used for holding both certificates, the JVM needs a way
-to differentiate them. The "normal" mechanism are the extended key usage flags which can be set in the certificates,
-see https://tools.ietf.org/html/rfc5280#section-4.2.1.12. The two relevant flags are "clientAuth" and "serverAuth"
-for the client and server certificates respectively.
+request a client certificate during the SSL handshake.
+Since the keystore is used for holding both certificates, the JVM needs a way
+to differentiate them. It is assumed that the normal mechanism to do this is the "extended key usage" certificate
+extension, see https://tools.ietf.org/html/rfc5280#section-4.2.1.12.
+The two relevant values are "clientAuth" and "serverAuth" for the client and server certificates respectively.
 
 Upon closer investigation, the problem seems to be related to the following code in the default key manager
 (SunX509KeyManagerImpl), see http://hg.openjdk.java.net/jdk8u/jdk8u60/jdk/file/935758609767/src/share/classes/sun/security/ssl/SunX509KeyManagerImpl.java#l220
-
 
     /*
      * Choose an alias to authenticate the client side of a secure
@@ -41,26 +44,26 @@ Upon closer investigation, the problem seems to be related to the following code
 
 Similar code is used for choosing the server alias.
 
-It turns out the selection is also based on the hashcode of the alias and certificate combination (which form a
+It turns out that the selection is also based on the hashcode of the alias and certificate combination (which form a
 map entry) because during
-selection the entry set of a HashMap of alias to certificate is iterated over. See
+selection the entry set of a HashMap of alias to certificate is iterated over. See line 352 of
 http://hg.openjdk.java.net/jdk8u/jdk8u60/jdk/file/935758609767/src/share/classes/sun/security/ssl/SunX509KeyManagerImpl.java#l352
 
-Due to the hashcode calculation being
-deterministic, i.e. causing the enumeration to have the same order, the JVM will always be incapable of
-being able to select both client and server certificates
-because it always returns the first one found (order based on hashcode) and so will always fail to complete
-the SSL handshake with either the caller or the down stream server.
+Due to the code selecting the first alias and due to the order of the aliases being constant once the keystore is loaded
+(hashcode calculation is deterministic), the JVM will never be capable of
+being able to select the correct certificate for both client and server connections
+and so will always fail to complete
+the SSL handshake with one of the caller or the down stream server.
 
 For this reason the author of this page believes this to be a bug rather than a change request.
 
-A patched version of the SunX509KeyManagerImpl (see [PatchedSunX509KeyManagerImpl](./src/main/java/PatchedSunX509KeyManagerImpl.java)), fixes the problem.
-It was necessary to add the same algorithm to both of the following methods:
+A patched version of the SunX509KeyManagerImpl (see [PatchedSunX509KeyManagerImpl](./src/main/java/PatchedSunX509KeyManagerImpl.java)),
+fixes the problem. It was necessary to add the same algorithm to both of the following methods:
 
 - chooseServerAlias
 - chooseClientAlias
 
-The additional selection looks like this:
+The more selective algorithm uses the extended key usage as follows:
 
     ...
     for(String alias : aliases){
@@ -83,16 +86,17 @@ The additional selection looks like this:
     return aliases[0];
 
 
-Logs including SSL debug logs from three tests are available:
+Logs including SSL debug logs (generated using the system property `-Djavax.net.debug=ssl`) from three
+tests are available:
 
 - [Unsuccessful, i.e. using just one keystore for both client and server certificates of the middle (Front => Middle => Back), where middle presents client certificate to front, instead of server certificate](./unsuccessful_client.md)
 - [Unsuccessful, i.e. using just one keystore for both client and server certificates of the middle (Front => Middle => Back), where middle sends server certificate to back, instead of client certificate](./unsuccessful_server.md)
 - [Successful, i.e. using patch (Front => MiddleWithPatchedKeyManager => Back) or using two keystores (Front => Middle2 => Back)](./successful.md)
 
-# Running the tests
+# Unit Tests
 
 [PatchedSunX509KeyManagerImplTest](./src/test/java/PatchedSunX509KeyManagerImplTest.java) tests the patched implementation and the test passes succesfully.
-[SunX509KeyManagerImplTest](./src/test/java/SunX509KeyManagerImplTest.java) tests the original implementation and the test fails.
+[SunX509KeyManagerImplTest](./src/test/java/SunX509KeyManagerImplTest.java) tests the original implementation but the test fails.
 
 # Running the examples
 
