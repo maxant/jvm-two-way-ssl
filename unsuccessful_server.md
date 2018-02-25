@@ -95,7 +95,7 @@ The front application delivered a suitable client certificate above.
     *** Finished
     *** Finished
 
-And the middle was happy with it. Now it starts the do the SSL handshake downstream with the back:
+And the middle was happy with it. Now it starts to do the SSL handshake downstream with the back:
 
     *** ClientHello, TLSv1.2
     *** ServerHello, TLSv1.2
