@@ -9,8 +9,6 @@ public class Front {
 
     public static void main(String[] args) throws NoSuchAlgorithmException, IOException {
 
-        //SEE MIDDLE
-
         System.setProperty("javax.net.ssl.keyStore", "certificates/front/front-keystore.jks");
         System.setProperty("javax.net.ssl.keyStorePassword", "12345_fks");
         System.setProperty("javax.net.ssl.keyStoreType", "JKS");

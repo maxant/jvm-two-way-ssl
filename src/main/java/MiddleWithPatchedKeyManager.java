@@ -3,16 +3,17 @@ import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
 import javax.net.ssl.*;
-import java.io.IOException;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
-import java.security.NoSuchAlgorithmException;
+import java.security.KeyStore;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class Middle {
+public class MiddleWithPatchedKeyManager {
 
-    public static void main(String[] args) throws NoSuchAlgorithmException, IOException, InterruptedException {
+    public static void main(String[] args) throws Exception {
 
         System.setProperty("javax.net.ssl.keyStore", "certificates/middle/middle-keystore.jks");
         System.setProperty("javax.net.ssl.keyStorePassword", "12345_mks");
@@ -23,7 +24,35 @@ public class Middle {
         System.setProperty("javax.net.debug", "ssl");
 
         HttpsServer server = HttpsServer.create(new InetSocketAddress(10001), 0);
-        SSLContext sslContext = SSLContext.getDefault();
+
+        // ////////////////////////////////////////////////////////////
+        // START PATCH
+        // ////////////////////////////////////////////////////////////
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+
+        // ////////////// KEY STORE /////////////////
+        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        try(InputStream is = new FileInputStream(System.getProperty("javax.net.ssl.keyStore"))){
+            keyStore.load(is, System.getProperty("javax.net.ssl.keyStorePassword").toCharArray());
+        }
+
+        PatchedSunX509KeyManagerImpl keyManager = new PatchedSunX509KeyManagerImpl(keyStore, System.getProperty("javax.net.ssl.keyStorePassword").toCharArray());
+
+        // ////////////// TRUST STORE /////////////////
+        KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        try(InputStream is = new FileInputStream(System.getProperty("javax.net.ssl.trustStore"))) {
+            trustStore.load(is, System.getProperty("javax.net.ssl.trustStorePassword").toCharArray());
+        }
+
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(trustStore);
+
+        sslContext.init(new KeyManager[]{ keyManager }, trustManagerFactory.getTrustManagers(), null);
+
+        // ////////////////////////////////////////////////////////////
+        // END PATCH
+        // ////////////////////////////////////////////////////////////
+
         server.setHttpsConfigurator(new HttpsConfigurator(sslContext) {
             @Override
             public void configure(HttpsParameters params) {
@@ -44,6 +73,10 @@ public class Middle {
         server.createContext("/middle", httpExchange -> {
             URL obj = new URL("https://localhost:10002/back");
             HttpsURLConnection connection = (HttpsURLConnection) obj.openConnection();
+
+            //ALSO IMPORTANT
+            connection.setSSLSocketFactory(sslContext.getSocketFactory());
+
             connection.setRequestMethod("GET");
             connection.setDoOutput(false);
             int responseCode = connection.getResponseCode();
@@ -54,4 +87,5 @@ public class Middle {
         });
         server.start();
     }
+
 }

@@ -17,13 +17,6 @@ public class Middle2 {
 
     public static void main(String[] args) throws NoSuchAlgorithmException, IOException, InterruptedException {
 
-        //FAILS WHEN FRONT CALLS BECAUSE MIDDLE PRESENTS THE client-middle
-        //CERT INSTEAD OF server-middle.
-        //client sees:
-        //    Exception in thread "main" javax.net.ssl.SSLHandshakeException: sun.security.validator.ValidatorException: PKIX path building failed: sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
-        //middle sees:
-        //    Thread-2, RECV TLSv1.2 ALERT:  fatal, certificate_unknown
-
         System.setProperty("javax.net.ssl.keyStore", "certificates/middle/middle-keystore-just-server-cert.jks");
         System.setProperty("javax.net.ssl.keyStorePassword", "12345_mks");
         System.setProperty("javax.net.ssl.keyStoreType", "JKS");
@@ -45,6 +38,7 @@ public class Middle2 {
                     SSLParameters defaultSSLParameters = sslContext.getDefaultSSLParameters();
                     defaultSSLParameters.setNeedClientAuth(true);
                     params.setSSLParameters(defaultSSLParameters);
+
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     System.out.println("Failed to create HTTPS server");
