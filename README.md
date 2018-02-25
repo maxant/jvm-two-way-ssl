@@ -54,7 +54,7 @@ the SSL handshake with either the caller or the down stream server.
 
 For this reason the author of this page believes this to be a bug rather than a change request.
 
-A patched version of the SunX509KeyManagerImpl (see ./src/main/java/PatchedSunX509KeyManagerImpl), fixes the problem.
+A patched version of the SunX509KeyManagerImpl (see [PatchedSunX509KeyManagerImpl](./src/main/java/PatchedSunX509KeyManagerImpl.java)), fixes the problem.
 It was necessary to add the same algorithm to both of the following methods:
 
 - chooseServerAlias
@@ -86,3 +86,8 @@ Logs including SSL debug logs from three tests are available:
 - [Unsuccessful, i.e. using just one keystore for both client and server certificates of the middle (Front => Middle => Back), where middle sends server certificate to back, instead of client certificate](./unsuccessful_server.md)
 - [Successful, i.e. using patch (Front => MiddleWithPatchedKeyManager => Back) or using two keystores (Front => Middle2 => Back)](./successful.md)
 
+# Running the tests
+
+[](./src/)
+
+# Running the examples
