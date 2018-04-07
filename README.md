@@ -119,4 +119,4 @@ See [certificates/README.md](./certificates/README.md).
 
 # Bug Report
 
-A bug was reported to Oracle on 20180225 with internal review ID 9052786.
+A bug was reported to Oracle on 20180225 with internal review ID 9052786, now officially [JDK-8199440](https://bugs.java.com/bugdatabase/view_bug.do?bug_id=JDK-8199440).
